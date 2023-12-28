@@ -7,11 +7,11 @@ import httpHost from '@/interwork/axios'
 
 const curUserusername = localStorage.getItem('username')
 interface UserData {
-  avatar: string,
+  avatar: string
   username: string
 }
-interface ResUserData extends UserData{
-  id: string,
+interface ResUserData extends UserData {
+  id: string
   password: string
 }
 
@@ -20,7 +20,7 @@ const formRef = ref<FormInstance>()
 const showJoinRoom = ref(false)
 const showDrawer = ref(false)
 
-const qqNumber = ref<Number>()
+const qqNumber = ref<number>()
 const joinRoomData = reactive({
   number: ''
 })
@@ -43,11 +43,11 @@ const previewAvatar = () => {
 const postAvatar = (avatarSrc: string) => {
   return httpHost.post('user/avatar', {
     username: localStorage.getItem('username'),
-    avatar: avatarSrc,
-  });
+    avatar: avatarSrc
+  })
 }
 
-const confirmAvatar = async() => {
+const confirmAvatar = async () => {
   const res = await postAvatar(drawerAvatar.value)
   console.log(res)
   showDrawer.value = false
@@ -70,7 +70,7 @@ const resetForm = (formEl: FormInstance | undefined) => {
   formEl.resetFields()
 }
 
-const initUsers = async() => {
+const initUsers = async () => {
   const res = await httpHost.get('user/all')
   const [me] = res.data.data.filter((user: ResUserData) => {
     return user.username == curUserusername
@@ -84,9 +84,9 @@ const initUsers = async() => {
   }
 }
 
-onMounted(async() => {
-  const {me, others} = await initUsers()
-  const {username, avatar} = me
+onMounted(async () => {
+  const { me, others } = await initUsers()
+  const { username, avatar } = me
   curUser.username = username
   curUser.avatar = avatar
   others.forEach((user: ResUserData) => {
@@ -103,12 +103,8 @@ onMounted(async() => {
     </div>
     <div class="tools">
       <div class="avatar">
-        <el-button
-          type="primary"
-          @click="changeAvatar"
-          >更换头像</el-button
-        >
-        <el-avatar :size="125" :src="curUser.avatar"/>
+        <el-button type="primary" @click="changeAvatar">更换头像</el-button>
+        <el-avatar :size="125" :src="curUser.avatar" />
       </div>
       <el-button
         type="primary"
@@ -162,11 +158,7 @@ onMounted(async() => {
       <el-avatar :src="drawerAvatar"></el-avatar>
     </template>
     <template #footer>
-      <el-button
-        type="primary"
-        @click="confirmAvatar"
-        >确认更换</el-button
-      >
+      <el-button type="primary" @click="confirmAvatar">确认更换</el-button>
     </template>
   </el-drawer>
 </template>

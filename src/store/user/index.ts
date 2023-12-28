@@ -1,5 +1,5 @@
-import { defineStore } from "pinia";
-import { UserState } from "./types";
+import { defineStore } from 'pinia'
+import { UserState } from './types'
 
 const useUserStore = defineStore('UserStore', {
   state: (): UserState => {
