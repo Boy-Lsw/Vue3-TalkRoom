@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import type { FormInstance, FormProps, FormRules } from 'element-plus'
+import { type FormInstance, type FormProps, type FormRules } from 'element-plus'
+import { useRouter } from 'vue-router';
+import httpHost from '@/interwork/axios/index.ts'
+
+const $router = useRouter()
 
 const labelPosition = ref<FormProps['labelPosition']>('right')
-
 const formRef = ref<FormInstance>()
-
+interface Info {
+  username: string
+  password: string
+}
 interface FormData {
   username: string
   password: string
@@ -20,9 +26,8 @@ const formData: FormData = reactive({
 const validateConfirmedPassword = (_: any, value: any, callback: any) => {
   if (value !== formData.password) {
     return callback(new Error('两次输入密码不一致！'))
-  }
+  }else callback()
 }
-
 const rules = reactive<FormRules<FormData>>({
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -36,14 +41,61 @@ const rules = reactive<FormRules<FormData>>({
 })
 const submitForm = (formRef: FormInstance | undefined) => {
   if (!formRef) return
-  formRef.validate((valid) => {
+  formRef.validate(async(valid) => {
     if (valid) {
-      console.log('submit!')
+      const info = {username: formData.username, password: formData.password}
+      let registerRes = await register(info)
+      if(registerRes.data.code == 200 || registerRes.data.code == 1001) {
+        return login(info)
+      }
     } else {
-      console.log('error submit!')
+    ElNotification({
+      title: '出错啦!',
+      message: '请检查账号密码是否正确!',
+      type: 'error',
+      position: 'top-right',
+      duration: 1000
+    })
       return false
     }
   })
+}
+
+const register = (info: Info) => {
+  return httpHost.post('auth/register', {
+    avatar: `https://api.multiavatar.com/Binx%${Math.floor(
+        Math.random() * 50000,
+      )}.png`,
+    username: info.username,
+    password: info.password
+  })
+}
+const login = async(info: Info) => {
+  const {data} = await httpHost.post('auth/login', info)
+  console.log(data)
+  if(!data) {
+    ElNotification({
+      title: '登录失败!',
+      message: '请检查网络!',
+      type: 'error',
+      position: 'top-right',
+      duration: 1000
+    })
+  }
+  if(data?.access_token) {
+    ElNotification({
+      // title: '登录成功!',
+      message: '登录成功!',
+      type: 'success',
+      position: 'top-right',
+      duration: 1000
+    })
+    localStorage.setItem('access_token', data.access_token)
+    localStorage.setItem('refresh_token', data.refresh_token)
+    localStorage.setItem('username', formData.username)
+    document.cookie = `timekey=${Date.now()}`;
+    $router.push('/chat')
+  }else return
 }
 </script>
 

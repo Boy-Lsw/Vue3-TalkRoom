@@ -1,17 +1,57 @@
 <script setup lang="ts">
 import ChatContent from '@/components/ChatContent.vue'
 import UserList from '@/components/UserList.vue'
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import type { FormInstance } from 'element-plus'
+import httpHost from '@/interwork/axios'
+
+const curUserusername = localStorage.getItem('username')
+interface UserData {
+  avatar: string,
+  username: string
+}
+interface ResUserData extends UserData{
+  id: string,
+  password: string
+}
 
 const formRef = ref<FormInstance>()
 
 const showJoinRoom = ref(false)
 const showDrawer = ref(false)
 
+const qqNumber = ref<Number>()
 const joinRoomData = reactive({
   number: ''
 })
+const curUser: UserData = reactive({
+  avatar: '',
+  username: ''
+})
+
+const drawerAvatar = ref('')
+
+const otherUsers = reactive<ResUserData[]>([])
+
+const changeAvatar = () => {
+  drawerAvatar.value = curUser.avatar
+  showDrawer.value = true
+}
+const previewAvatar = () => {
+  drawerAvatar.value = `https://q2.qlogo.cn/headimg_dl?dst_uin=${qqNumber.value}&spec=100`
+}
+const postAvatar = (avatarSrc: string) => {
+  return httpHost.post('user/avatar', {
+    username: localStorage.getItem('username'),
+    avatar: avatarSrc,
+  });
+}
+
+const confirmAvatar = async() => {
+  const res = await postAvatar(drawerAvatar.value)
+  console.log(res)
+  showDrawer.value = false
+}
 
 const submitForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
@@ -29,6 +69,30 @@ const resetForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
   formEl.resetFields()
 }
+
+const initUsers = async() => {
+  const res = await httpHost.get('user/all')
+  const [me] = res.data.data.filter((user: ResUserData) => {
+    return user.username == curUserusername
+  })
+  const others = res.data.data.filter((user: ResUserData) => {
+    return user.username != curUserusername
+  })
+  return {
+    me,
+    others
+  }
+}
+
+onMounted(async() => {
+  const {me, others} = await initUsers()
+  const {username, avatar} = me
+  curUser.username = username
+  curUser.avatar = avatar
+  others.forEach((user: ResUserData) => {
+    otherUsers.push(user)
+  })
+})
 </script>
 
 <template>
@@ -41,14 +105,10 @@ const resetForm = (formEl: FormInstance | undefined) => {
       <div class="avatar">
         <el-button
           type="primary"
-          @click="
-            () => {
-              showDrawer = true
-            }
-          "
+          @click="changeAvatar"
           >更换头像</el-button
         >
-        <el-avatar :size="125" src="" />
+        <el-avatar :size="125" :src="curUser.avatar"/>
       </div>
       <el-button
         type="primary"
@@ -97,18 +157,14 @@ const resetForm = (formEl: FormInstance | undefined) => {
       <span>输入qq号修改头像</span>
     </template>
     <template #default>
-      <el-input placeholder="输入qq号"></el-input>
-      <el-button type="primary">点击预览</el-button>
-      <el-avatar></el-avatar>
+      <el-input placeholder="输入qq号" v-model="qqNumber"></el-input>
+      <el-button type="primary" @click="previewAvatar">点击预览</el-button>
+      <el-avatar :src="drawerAvatar"></el-avatar>
     </template>
     <template #footer>
       <el-button
         type="primary"
-        @click="
-          () => {
-            showDrawer = false
-          }
-        "
+        @click="confirmAvatar"
         >确认更换</el-button
       >
     </template>
