@@ -93,6 +93,10 @@ onMounted(async () => {
     otherUsers.push(user)
   })
 })
+
+// watch(() => curUser.avatar, () => {
+//   nextTick()
+// })
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { clearExpiredRequest, refreshToken } from './refreshToken'
 
 export const baseURL = 'http://localhost:3000/'
 
@@ -15,35 +16,34 @@ const checkTimeout = (time: number) => {
 
 const httpHost = axios.create({
   baseURL,
-  timeout: 5000
+  timeout: 5000,
+  // headers: {
+  //   'Content-Type': 'application/x-www-form-urlencoded'
+  // }
 })
 
-httpHost.defaults.headers.post['Content-Type'] =
-  'application/x-www-form-urlencoded'
-
-const access_token = localStorage.getItem('access_token')
-const refresh_token = localStorage.getItem('refresh_token')
+httpHost.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'
 
 httpHost.interceptors.request.use(
-  (request) => {
-    if (refresh_token) {
-      if (checkTimeout(10 * 60 * 60 * 24)) {
-        localStorage.removeItem('refresh_token')
-        window.location.hash = '/'
-        ElNotification({
-          title: '身份信息失效!',
-          message: '请重新登录!',
-          type: 'error',
-          position: 'top-right',
-          duration: 1000
-        })
-        return Promise.reject(new Error('token失效,请重新登录'))
-      }
-      if (access_token) {
-        request.headers.Authorization = `Bearer ${access_token}`
-      }
+  (config) => {
+    const refresh_token = localStorage.getItem('refresh_token')
+    const access_token = localStorage.getItem('access_token')
+    if (refresh_token && checkTimeout(10 * 60 * 60 * 24)) {
+      localStorage.removeItem('refresh_token')
+      window.location.hash = '/'
+      ElNotification({
+        title: '身份信息失效!',
+        message: '请重新登录!',
+        type: 'error',
+        position: 'top-right',
+        duration: 1000
+      })
+      return Promise.reject(new Error('token失效,请重新登录'))
     }
-    return request
+    if (access_token && config.url != 'auth/refreshToken') {
+      config.headers.Authorization = `Bearer ${access_token}`
+    }
+    return config
   },
   (error) => {
     return Promise.reject(error)
@@ -55,9 +55,17 @@ httpHost.interceptors.response.use(
     return response
   },
   (error) => {
-    // localStorage.removeItem('token')
-    console.log(error)
-    // window.location.href = '/'
+    const { data, config } = error.response
+    return new Promise((resolve, reject) => {
+      if (data.status == 401 && config.url != 'auth/refreshToken') {
+        refreshToken(() => {
+          resolve(httpHost(config));
+        })
+      } else if (data.status == 401 && config.url == 'auth/refreshToken') {
+        clearExpiredRequest()
+        window.location.hash = '/'
+      } else { reject(error.response) }
+    })
   }
 )
 

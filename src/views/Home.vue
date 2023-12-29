@@ -72,7 +72,6 @@ const register = (info: Info) => {
 }
 const login = async (info: Info) => {
   const { data } = await httpHost.post('auth/login', info)
-  console.log(data)
   if (!data) {
     ElNotification({
       title: '登录失败!',
@@ -81,8 +80,7 @@ const login = async (info: Info) => {
       position: 'top-right',
       duration: 1000
     })
-  }
-  if (data?.access_token) {
+  } else{
     ElNotification({
       // title: '登录成功!',
       message: '登录成功!',
@@ -95,7 +93,7 @@ const login = async (info: Info) => {
     localStorage.setItem('username', formData.username)
     document.cookie = `timekey=${Date.now()}`
     $router.push('/chat')
-  } else return
+  } 
 }
 </script>
 
