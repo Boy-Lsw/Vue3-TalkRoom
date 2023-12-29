@@ -80,7 +80,7 @@ const login = async (info: Info) => {
       position: 'top-right',
       duration: 1000
     })
-  } else{
+  } else {
     ElNotification({
       // title: '登录成功!',
       message: '登录成功!',
@@ -93,7 +93,7 @@ const login = async (info: Info) => {
     localStorage.setItem('username', formData.username)
     document.cookie = `timekey=${Date.now()}`
     $router.push('/chat')
-  } 
+  }
 }
 </script>
 

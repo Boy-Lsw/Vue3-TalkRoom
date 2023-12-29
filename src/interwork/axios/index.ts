@@ -16,13 +16,14 @@ const checkTimeout = (time: number) => {
 
 const httpHost = axios.create({
   baseURL,
-  timeout: 5000,
+  timeout: 5000
   // headers: {
   //   'Content-Type': 'application/x-www-form-urlencoded'
   // }
 })
 
-httpHost.defaults.headers.post['Content-Type'] = 'application/x-www-form-urlencoded'
+httpHost.defaults.headers.post['Content-Type'] =
+  'application/x-www-form-urlencoded'
 
 httpHost.interceptors.request.use(
   (config) => {
@@ -59,12 +60,14 @@ httpHost.interceptors.response.use(
     return new Promise((resolve, reject) => {
       if (data.status == 401 && config.url != 'auth/refreshToken') {
         refreshToken(() => {
-          resolve(httpHost(config));
+          resolve(httpHost(config))
         })
       } else if (data.status == 401 && config.url == 'auth/refreshToken') {
         clearExpiredRequest()
         window.location.hash = '/'
-      } else { reject(error.response) }
+      } else {
+        reject(error.response)
+      }
     })
   }
 )
