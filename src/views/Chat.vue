@@ -14,16 +14,29 @@ interface ResUserData extends UserData {
   id: string
   password: string
 }
+// interface Message {
+//   sender: string
+//   content: string
+//   receiver: string
+//   sendTime: string
+// }
+// let messages = reactive<Message[]>([])
+
+let messages = reactive({
+  list: []
+})
 
 const formRef = ref<FormInstance>()
 
 const showJoinRoom = ref(false)
 const showDrawer = ref(false)
 
-const qqNumber = ref<number>()
+const qqNumber = ref<number | string>()
 const joinRoomData = reactive({
   number: ''
 })
+const isEnterRoom = ref(false)
+
 const curUser: UserData = reactive({
   avatar: '',
   username: ''
@@ -49,22 +62,45 @@ const postAvatar = (avatarSrc: string) => {
 
 const confirmAvatar = async () => {
   const res = await postAvatar(drawerAvatar.value)
-  console.log(res)
+  if (res.data.code == 200) {
+    curUser.avatar = res.data.avatar
+    ElNotification({
+      title: '操作成功!',
+      message: '更换头像成功!',
+      type: 'success',
+      position: 'top-right',
+      duration: 1000
+    })
+  } else {
+    ElNotification({
+      title: '操作失败!',
+      message: '更换头像失败!',
+      type: 'error',
+      position: 'top-right',
+      duration: 1000
+    })
+  }
   showDrawer.value = false
 }
 
+const enterRoom = () => {
+  // formRef.value?.clearValidate()
+  joinRoomData.number = ''
+  showJoinRoom.value = true
+}
 const submitForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
   formEl.validate((valid) => {
     if (valid) {
+      isEnterRoom.value = true
       console.log('submit!')
+      showJoinRoom.value = false
     } else {
       console.log('error submit!')
       return false
     }
   })
 }
-
 const resetForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
   formEl.resetFields()
@@ -84,6 +120,15 @@ const initUsers = async () => {
   }
 }
 
+const getTalkMessages = async (currentChater: string) => {
+  const curUser = localStorage.getItem('username')
+  const result = await httpHost.post('message/list', {
+    currentChater,
+    username: curUser
+  })
+  messages.list = result.data.data
+}
+
 onMounted(async () => {
   const { me, others } = await initUsers()
   const { username, avatar } = me
@@ -93,31 +138,38 @@ onMounted(async () => {
     otherUsers.push(user)
   })
 })
-
-// watch(() => curUser.avatar, () => {
-//   nextTick()
-// })
 </script>
 
 <template>
   <div class="chat-box">
     <div class="chatScreen">
-      <UserList></UserList>
-      <ChatContent></ChatContent>
+      <UserList
+        :isEnterRoom="isEnterRoom"
+        @getTalkMessages="getTalkMessages"
+      ></UserList>
+      <ChatContent
+        :isEnterRoom="isEnterRoom"
+        :roomId="joinRoomData.number"
+        :messageList="messages.list"
+      ></ChatContent>
     </div>
     <div class="tools">
       <div class="avatar">
         <el-button type="primary" @click="changeAvatar">更换头像</el-button>
         <el-avatar :size="125" :src="curUser.avatar" />
       </div>
+      <el-button type="primary" v-if="!isEnterRoom" @click="enterRoom"
+        >加入房间</el-button
+      >
       <el-button
         type="primary"
+        v-else
         @click="
           () => {
-            showJoinRoom = true
+            isEnterRoom = false
           }
         "
-        >加入房间</el-button
+        >离开房间</el-button
       >
     </div>
   </div>

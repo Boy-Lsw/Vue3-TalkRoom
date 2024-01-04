@@ -1,41 +1,53 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { watch, reactive } from 'vue'
+
+const props = defineProps(['isEnterRoom'])
+const emits = defineEmits(['getTalkMessages'])
+
+interface User {
+  username: string
+  avatar: string
+}
+const dataList1 = [
+  { username: 'test1', avatar: 'tset1avatar' },
+  { username: 'test2', avatar: 'tset2avatar' },
+  { username: 'test3', avatar: 'tset3avatar' }
+]
+const dataList2 = [
+  { username: 'test1', avatar: 'tset1avatar' },
+  { username: 'test2', avatar: 'tset2avatar' }
+]
+
+const curUserList = reactive<User[]>(dataList1)
+const roomUserList = reactive<User[]>(dataList2)
+
+const setCurrentChater = (curChater: string) => {
+  emits('getTalkMessages', curChater)
+}
+
+watch(
+  () => props.isEnterRoom,
+  (cur, old) => {
+    console.log(cur, old)
+  }
+)
+</script>
 
 <template>
-  <div class="userList-box">
-    <div class="userBox">
+  <div class="userList-box" v-if="!props.isEnterRoom">
+    <div v-for="item in curUserList" :key="item.username" class="userBox">
       <el-avatar
-        src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"
-      />
-      <p>namefhhhhhhhhhfhffghfghhfgggggggggggg</p>
-      <!-- <p>name</p> -->
+        :src="item.avatar"
+        @click="setCurrentChater(item.username)"
+      ></el-avatar>
+      <p>{{ item.username }}</p>
     </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
-    </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
-    </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
-    </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
-    </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
-    </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
-    </div>
-    <div class="userBox">
-      <el-avatar />
-      <p>name</p>
+  </div>
+
+  <div class="userList-box" v-else>
+    <div v-for="item in roomUserList" :key="item.username" class="userBox">
+      <el-avatar :src="item.avatar"></el-avatar>
+      <p>{{ item.username }}</p>
     </div>
   </div>
 </template>
