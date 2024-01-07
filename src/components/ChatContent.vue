@@ -1,7 +1,24 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, watch, ref } from 'vue'
 
-const props = defineProps(['isEnterRoom', 'roomId', 'messageList'])
+interface Message {
+  sender: string
+  sendTime: string
+  content: string
+  id: number
+  receiver: string
+}
+interface CurMessage {
+  list: Message[]
+}
+interface Props {
+  isEnterRoom: boolean
+  roomId: string
+  messageList: Message[]
+  curChater: string
+}
+
+const props = defineProps<Props>()
 
 // interface RoomMessage {
 //   sender: string,
@@ -10,13 +27,16 @@ const props = defineProps(['isEnterRoom', 'roomId', 'messageList'])
 // }
 // const roomMessages = reactive<RoomMessage[]>([])
 
-const messages = reactive({
-  list: []
-})
+const isTalking = ref(false)
+
+const messages = reactive<CurMessage>({ list: [] })
+
+const username = localStorage.getItem('username')
 
 watch(
   () => props.messageList,
   (cur) => {
+    isTalking.value = true
     messages.list = cur
   }
 )
@@ -24,35 +44,20 @@ watch(
 
 <template>
   <div class="content-box" v-if="!props.isEnterRoom">
-    <h1 class="noMessage" v-if="!messages.list.length">
-      点击左侧用户列表开始聊天
-    </h1>
-    <div class="content" v-if="messages.list.length">
-      <span class="title">与xxx的私人房间</span>
+    <h1 class="noMessage" v-if="!isTalking">点击左侧用户列表开始聊天</h1>
+    <div class="content" v-else>
+      <span class="title">与{{ props.curChater }}的私人房间</span>
       <div class="messages">
-        <div class="information-box toMe">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information">
-            nihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihao</span
-          >
-        </div>
-        <div class="information-box toMe">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information">nihaonihonihao</span>
-        </div>
-        <div class="information-box toOther">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information"> nihaonihaoni </span>
-        </div>
-        <div class="information-box toOther">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information">
-            nihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihao
-          </span>
+        <div
+          v-for="item in messageList"
+          :key="item.id"
+          :class="`information-box ${
+            item.sender == username ? 'toOther' : 'toMe'
+          }`"
+        >
+          <span class="name">{{ item.sender }}</span>
+          <span class="time">{{ item.sendTime }}</span>
+          <span class="information">{{ item.content }}</span>
         </div>
       </div>
       <div class="sender">

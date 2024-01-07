@@ -4,6 +4,7 @@ import UserList from '@/components/UserList.vue'
 import { reactive, ref, onMounted } from 'vue'
 import type { FormInstance } from 'element-plus'
 import httpHost from '@/interwork/axios'
+import { socket } from '@/interwork/socket'
 
 const curUserusername = localStorage.getItem('username')
 interface UserData {
@@ -14,15 +15,21 @@ interface ResUserData extends UserData {
   id: string
   password: string
 }
-// interface Message {
-//   sender: string
-//   content: string
-//   receiver: string
-//   sendTime: string
-// }
-// let messages = reactive<Message[]>([])
+interface Message {
+  sender: string
+  content: string
+  receiver: string
+  sendTime: string
+  id: number
+}
+interface CurMessage {
+  list: Message[]
+}
+interface RoomUsers {
+  list: string[]
+}
 
-let messages = reactive({
+let messages = reactive<CurMessage>({
   list: []
 })
 
@@ -41,10 +48,13 @@ const curUser: UserData = reactive({
   avatar: '',
   username: ''
 })
+const curChater = ref<string>('')
 
 const drawerAvatar = ref('')
 
 const otherUsers = reactive<ResUserData[]>([])
+const allUsers = reactive<ResUserData[]>([])
+const roomUsers = reactive<RoomUsers>({ list: [] })
 
 const changeAvatar = () => {
   drawerAvatar.value = curUser.avatar
@@ -88,13 +98,25 @@ const enterRoom = () => {
   joinRoomData.number = ''
   showJoinRoom.value = true
 }
+const leaveRoom = () => {
+  socket.emit('leave')
+  socket.off('sys')
+  isEnterRoom.value = false
+}
 const submitForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
   formEl.validate((valid) => {
     if (valid) {
       isEnterRoom.value = true
-      console.log('submit!')
       showJoinRoom.value = false
+      socket.emit('joinRoom', {
+        roomId: joinRoomData.number,
+        user: localStorage.getItem('username')
+      })
+      socket.on('sys', (info) => {
+        roomUsers.list = [...info.users]
+        // console.log(info)
+      })
     } else {
       console.log('error submit!')
       return false
@@ -121,6 +143,7 @@ const initUsers = async () => {
 }
 
 const getTalkMessages = async (currentChater: string) => {
+  curChater.value = currentChater
   const curUser = localStorage.getItem('username')
   const result = await httpHost.post('message/list', {
     currentChater,
@@ -134,8 +157,10 @@ onMounted(async () => {
   const { username, avatar } = me
   curUser.username = username
   curUser.avatar = avatar
+  allUsers.push(me)
   others.forEach((user: ResUserData) => {
     otherUsers.push(user)
+    allUsers.push(user)
   })
 })
 </script>
@@ -146,11 +171,15 @@ onMounted(async () => {
       <UserList
         :isEnterRoom="isEnterRoom"
         @getTalkMessages="getTalkMessages"
+        :otherUsers="otherUsers"
+        :allUsers="allUsers"
+        :roomUsers="roomUsers"
       ></UserList>
       <ChatContent
         :isEnterRoom="isEnterRoom"
         :roomId="joinRoomData.number"
         :messageList="messages.list"
+        :curChater="curChater"
       ></ChatContent>
     </div>
     <div class="tools">
@@ -161,16 +190,7 @@ onMounted(async () => {
       <el-button type="primary" v-if="!isEnterRoom" @click="enterRoom"
         >加入房间</el-button
       >
-      <el-button
-        type="primary"
-        v-else
-        @click="
-          () => {
-            isEnterRoom = false
-          }
-        "
-        >离开房间</el-button
-      >
+      <el-button type="primary" v-else @click="leaveRoom">离开房间</el-button>
     </div>
   </div>
 

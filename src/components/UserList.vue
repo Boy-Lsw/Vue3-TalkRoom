@@ -1,41 +1,48 @@
 <script setup lang="ts">
 import { watch, reactive } from 'vue'
 
-const props = defineProps(['isEnterRoom'])
+interface RoomUsers {
+  list: string[]
+}
+interface UserData {
+  avatar: string
+  username: string
+  id: string
+  password: string
+}
+interface RoomUserData {
+  list: UserData[]
+}
+interface Props {
+  allUsers: UserData[]
+  otherUsers: UserData[]
+  isEnterRoom: boolean
+  roomUsers: RoomUsers
+}
+
+const props = defineProps<Props>()
 const emits = defineEmits(['getTalkMessages'])
 
-interface User {
-  username: string
-  avatar: string
-}
-const dataList1 = [
-  { username: 'test1', avatar: 'tset1avatar' },
-  { username: 'test2', avatar: 'tset2avatar' },
-  { username: 'test3', avatar: 'tset3avatar' }
-]
-const dataList2 = [
-  { username: 'test1', avatar: 'tset1avatar' },
-  { username: 'test2', avatar: 'tset2avatar' }
-]
-
-const curUserList = reactive<User[]>(dataList1)
-const roomUserList = reactive<User[]>(dataList2)
+// const otherUsers = reactive<UserData[]>([])
+const roomUserList = reactive<RoomUserData>({ list: [] })
 
 const setCurrentChater = (curChater: string) => {
   emits('getTalkMessages', curChater)
 }
 
 watch(
-  () => props.isEnterRoom,
-  (cur, old) => {
-    console.log(cur, old)
+  () => props.roomUsers.list,
+  (cur) => {
+    console.log(cur)
+    const result = props.allUsers.filter((item) => cur.includes(item.username))
+    roomUserList.list = result
   }
 )
 </script>
 
 <template>
   <div class="userList-box" v-if="!props.isEnterRoom">
-    <div v-for="item in curUserList" :key="item.username" class="userBox">
+    <div v-for="item in props.otherUsers" :key="item.username" class="userBox">
       <el-avatar
         :src="item.avatar"
         @click="setCurrentChater(item.username)"
@@ -45,7 +52,7 @@ watch(
   </div>
 
   <div class="userList-box" v-else>
-    <div v-for="item in roomUserList" :key="item.username" class="userBox">
+    <div v-for="item in roomUserList.list" :key="item.username" class="userBox">
       <el-avatar :src="item.avatar"></el-avatar>
       <p>{{ item.username }}</p>
     </div>
