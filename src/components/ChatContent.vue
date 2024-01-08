@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { reactive, watch, ref } from 'vue'
+import useUserStore from '@/store/user'
+
+const userStore = useUserStore()
 
 interface Message {
   sender: string
@@ -31,7 +34,15 @@ const isTalking = ref(false)
 
 const messages = reactive<CurMessage>({ list: [] })
 
-const username = localStorage.getItem('username')
+const sendMessage = (e: any) => {
+  console.log(e)
+}
+
+const getDom = () => {
+  const contentBox = document.querySelector('.content-box .content .messages')
+  return contentBox
+}
+defineExpose({getDom})
 
 watch(
   () => props.messageList,
@@ -52,7 +63,7 @@ watch(
           v-for="item in messageList"
           :key="item.id"
           :class="`information-box ${
-            item.sender == username ? 'toOther' : 'toMe'
+            item.sender == userStore.username ? 'toOther' : 'toMe'
           }`"
         >
           <span class="name">{{ item.sender }}</span>
@@ -71,6 +82,9 @@ watch(
     <div class="content">
       <span class="title">房间号:{{ props.roomId }}</span>
       <div class="messages">
+        <div class="tips">
+          tipsTest
+        </div>
         <div class="information-box toMe">
           <span class="name">liao</span>
           <span class="time">10:24:35</span>
@@ -98,7 +112,7 @@ watch(
       </div>
       <div class="sender">
         <el-input placeholder="说点什么..."></el-input>
-        <el-button type="primary" size="large">发送</el-button>
+        <el-button type="primary" size="large" @click="sendMessage">发送</el-button>
       </div>
     </div>
   </div>
@@ -137,7 +151,10 @@ watch(
       width: 100%;
       overflow-y: auto;
       overflow-x: hidden;
-      // background-color: red;
+      // .tips{
+      //   text-align: center;
+      //   color: #707070;
+      // }
       .information-box {
         display: flex;
         flex-direction: column;
@@ -191,5 +208,13 @@ watch(
       }
     }
   }
+}
+</style>
+
+<style>
+.tips{
+  text-align: center;
+  color: #707070;
+  font-size: 16px;
 }
 </style>

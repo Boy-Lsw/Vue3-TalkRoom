@@ -4,13 +4,12 @@ import { UserState } from './types'
 const useUserStore = defineStore('UserStore', {
   state: (): UserState => {
     return {
-      username: '',
-      avatar: ''
+      username: ''
     }
   },
   actions: {
-    updateAvatar(avatar: string) {
-      this.avatar = avatar
+    updateUsername(username: string) {
+      this.username = username
     }
   }
 })

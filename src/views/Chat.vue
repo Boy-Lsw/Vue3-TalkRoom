@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import ChatContent from '@/components/ChatContent.vue'
 import UserList from '@/components/UserList.vue'
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, nextTick } from 'vue'
 import type { FormInstance } from 'element-plus'
 import httpHost from '@/interwork/axios'
 import { socket } from '@/interwork/socket'
+import useUserStore from '@/store/user'
 
-const curUserusername = localStorage.getItem('username')
+const userStore = useUserStore()
+userStore.updateUsername(localStorage.getItem('username') as string)
+// const curUserusername = userStore.username
+
 interface UserData {
   avatar: string
   username: string
@@ -33,6 +37,7 @@ let messages = reactive<CurMessage>({
   list: []
 })
 
+const chatContentRef = ref()
 const formRef = ref<FormInstance>()
 
 const showJoinRoom = ref(false)
@@ -113,9 +118,16 @@ const submitForm = (formEl: FormInstance | undefined) => {
         roomId: joinRoomData.number,
         user: localStorage.getItem('username')
       })
-      socket.on('sys', (info) => {
+      socket.on('sys', async(info) => {
         roomUsers.list = [...info.users]
         // console.log(info)
+        const time = new Date()
+        const tip = document.createElement('div')
+        tip.setAttribute('class', 'tips')
+        tip.innerHTML = `${info.msg} (${time})`
+        await nextTick()
+        const contentDom = chatContentRef.value.getDom()
+        contentDom.appendChild(tip)
       })
     } else {
       console.log('error submit!')
@@ -131,10 +143,10 @@ const resetForm = (formEl: FormInstance | undefined) => {
 const initUsers = async () => {
   const res = await httpHost.get('user/all')
   const [me] = res.data.data.filter((user: ResUserData) => {
-    return user.username == curUserusername
+    return user.username == userStore.username
   })
   const others = res.data.data.filter((user: ResUserData) => {
-    return user.username != curUserusername
+    return user.username != userStore.username
   })
   return {
     me,
@@ -144,13 +156,15 @@ const initUsers = async () => {
 
 const getTalkMessages = async (currentChater: string) => {
   curChater.value = currentChater
-  const curUser = localStorage.getItem('username')
+  const curUser = userStore.username
   const result = await httpHost.post('message/list', {
     currentChater,
     username: curUser
   })
   messages.list = result.data.data
 }
+
+socket.on('showMessage', getTalkMessages)
 
 onMounted(async () => {
   const { me, others } = await initUsers()
@@ -180,6 +194,7 @@ onMounted(async () => {
         :roomId="joinRoomData.number"
         :messageList="messages.list"
         :curChater="curChater"
+        ref="chatContentRef"
       ></ChatContent>
     </div>
     <div class="tools">
