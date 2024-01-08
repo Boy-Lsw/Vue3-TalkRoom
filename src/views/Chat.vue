@@ -118,7 +118,7 @@ const submitForm = (formEl: FormInstance | undefined) => {
         roomId: joinRoomData.number,
         user: localStorage.getItem('username')
       })
-      socket.on('sys', async(info) => {
+      socket.on('sys', async (info) => {
         roomUsers.list = [...info.users]
         // console.log(info)
         const time = new Date()

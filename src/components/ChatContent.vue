@@ -42,7 +42,7 @@ const getDom = () => {
   const contentBox = document.querySelector('.content-box .content .messages')
   return contentBox
 }
-defineExpose({getDom})
+defineExpose({ getDom })
 
 watch(
   () => props.messageList,
@@ -82,9 +82,7 @@ watch(
     <div class="content">
       <span class="title">房间号:{{ props.roomId }}</span>
       <div class="messages">
-        <div class="tips">
-          tipsTest
-        </div>
+        <div class="tips">tipsTest</div>
         <div class="information-box toMe">
           <span class="name">liao</span>
           <span class="time">10:24:35</span>
@@ -112,7 +110,9 @@ watch(
       </div>
       <div class="sender">
         <el-input placeholder="说点什么..."></el-input>
-        <el-button type="primary" size="large" @click="sendMessage">发送</el-button>
+        <el-button type="primary" size="large" @click="sendMessage"
+          >发送</el-button
+        >
       </div>
     </div>
   </div>
@@ -212,7 +212,7 @@ watch(
 </style>
 
 <style>
-.tips{
+.tips {
   text-align: center;
   color: #707070;
   font-size: 16px;
