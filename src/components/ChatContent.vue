@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { reactive, watch, ref } from 'vue'
 import useUserStore from '@/store/user'
-import httpHost from '@/interwork/axios';
-import { formatTime } from '@/utils';
-import { socket } from '@/interwork/socket';
+import httpHost from '@/interwork/axios'
+import { formatTime } from '@/utils'
+import { socket } from '@/interwork/socket'
 
 const userStore = useUserStore()
 
@@ -38,10 +38,10 @@ const isTalking = ref(false)
 const messages = reactive<CurMessage>({ list: [] })
 
 const iptMessage = ref('')
-const sendMessage = async() => {
+const sendMessage = async () => {
   const val = iptMessage.value.trim()
   const strLen = val.length
-  if(strLen>0 && strLen<=10) {
+  if (strLen > 0 && strLen <= 10) {
     try {
       await httpHost.post('message/send', {
         sender: userStore.username,
@@ -53,20 +53,19 @@ const sendMessage = async() => {
       console.log(error)
     }
     socket.emit('sendMessage')
-  }else {
+  } else {
     ElNotification({
-    message: '发送消息失败!',
-    type: 'error',
-    position: 'top-right',
-    duration: 1000
-  })
+      message: '发送消息失败!',
+      type: 'error',
+      position: 'top-right',
+      duration: 1000
+    })
   }
   iptMessage.value = ''
 }
 
 // const iptRoomMessage = ref('')
-const sendRoomMessage = () => {
-}
+const sendRoomMessage = () => {}
 
 const getDom = () => {
   const contentBox = document.querySelector('.content-box .content .messages')
@@ -106,7 +105,9 @@ watch(
       </div>
       <div class="sender">
         <el-input placeholder="说点什么..." v-model="iptMessage"></el-input>
-        <el-button type="primary" size="large" @click="sendMessage">发送</el-button>
+        <el-button type="primary" size="large" @click="sendMessage"
+          >发送</el-button
+        >
       </div>
     </div>
   </div>

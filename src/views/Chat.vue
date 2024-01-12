@@ -205,7 +205,9 @@ onMounted(async () => {
     </div>
     <div class="tools">
       <div class="avatar">
-        <el-button type="primary" v-if="!isEnterRoom" @click="changeAvatar">更换头像</el-button>
+        <el-button type="primary" v-if="!isEnterRoom" @click="changeAvatar"
+          >更换头像</el-button
+        >
         <el-avatar :size="125" :src="curUser.avatar" />
       </div>
       <el-button type="primary" v-if="!isEnterRoom" @click="enterRoom"
