@@ -6,6 +6,7 @@ import type { FormInstance } from 'element-plus'
 import httpHost from '@/interwork/axios'
 import { socket } from '@/interwork/socket'
 import useUserStore from '@/store/user'
+import { formatTime, toBottom } from '@/utils.ts'
 
 const userStore = useUserStore()
 userStore.updateUsername(localStorage.getItem('username') as string)
@@ -107,6 +108,7 @@ const leaveRoom = () => {
   socket.emit('leave')
   socket.off('sys')
   isEnterRoom.value = false
+  chatContentRef.value.talkingFlag()
 }
 const submitForm = (formEl: FormInstance | undefined) => {
   if (!formEl) return
@@ -121,7 +123,7 @@ const submitForm = (formEl: FormInstance | undefined) => {
       socket.on('sys', async (info) => {
         roomUsers.list = [...info.users]
         // console.log(info)
-        const time = new Date()
+        const time = formatTime(new Date())
         const tip = document.createElement('div')
         tip.setAttribute('class', 'tips')
         tip.innerHTML = `${info.msg} (${time})`
@@ -154,14 +156,18 @@ const initUsers = async () => {
   }
 }
 
-const getTalkMessages = async (currentChater: string) => {
-  curChater.value = currentChater
+const getTalkMessages = async () => {
+  curChater.value = userStore.curChater
   const curUser = userStore.username
   const result = await httpHost.post('message/list', {
-    currentChater,
+    currentChater: userStore.curChater,
     username: curUser
   })
   messages.list = result.data.data
+  nextTick(() => {
+    toBottom(chatContentRef.value.getDom())
+  })
+  // toBottom(chatContentRef.value.getDom())
 }
 
 socket.on('showMessage', getTalkMessages)
@@ -199,7 +205,7 @@ onMounted(async () => {
     </div>
     <div class="tools">
       <div class="avatar">
-        <el-button type="primary" @click="changeAvatar">更换头像</el-button>
+        <el-button type="primary" v-if="!isEnterRoom" @click="changeAvatar">更换头像</el-button>
         <el-avatar :size="125" :src="curUser.avatar" />
       </div>
       <el-button type="primary" v-if="!isEnterRoom" @click="enterRoom"

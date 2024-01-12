@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { reactive, watch, ref } from 'vue'
 import useUserStore from '@/store/user'
+import httpHost from '@/interwork/axios';
+import { formatTime } from '@/utils';
+import { socket } from '@/interwork/socket';
 
 const userStore = useUserStore()
 
@@ -34,15 +37,45 @@ const isTalking = ref(false)
 
 const messages = reactive<CurMessage>({ list: [] })
 
-const sendMessage = (e: any) => {
-  console.log(e)
+const iptMessage = ref('')
+const sendMessage = async() => {
+  const val = iptMessage.value.trim()
+  const strLen = val.length
+  if(strLen>0 && strLen<=10) {
+    try {
+      await httpHost.post('message/send', {
+        sender: userStore.username,
+        content: iptMessage.value,
+        receiver: props.curChater,
+        sendTime: formatTime(new Date())
+      })
+    } catch (error) {
+      console.log(error)
+    }
+    socket.emit('sendMessage')
+  }else {
+    ElNotification({
+    message: '发送消息失败!',
+    type: 'error',
+    position: 'top-right',
+    duration: 1000
+  })
+  }
+  iptMessage.value = ''
+}
+
+// const iptRoomMessage = ref('')
+const sendRoomMessage = () => {
 }
 
 const getDom = () => {
   const contentBox = document.querySelector('.content-box .content .messages')
   return contentBox
 }
-defineExpose({ getDom })
+const talkingFlag = () => {
+  isTalking.value = false
+}
+defineExpose({ getDom, talkingFlag })
 
 watch(
   () => props.messageList,
@@ -72,8 +105,8 @@ watch(
         </div>
       </div>
       <div class="sender">
-        <el-input placeholder="说点什么..."></el-input>
-        <el-button type="primary" size="large">发送</el-button>
+        <el-input placeholder="说点什么..." v-model="iptMessage"></el-input>
+        <el-button type="primary" size="large" @click="sendMessage">发送</el-button>
       </div>
     </div>
   </div>
@@ -110,7 +143,7 @@ watch(
       </div>
       <div class="sender">
         <el-input placeholder="说点什么..."></el-input>
-        <el-button type="primary" size="large" @click="sendMessage"
+        <el-button type="primary" size="large" @click="sendRoomMessage"
           >发送</el-button
         >
       </div>

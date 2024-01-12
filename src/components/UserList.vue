@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { watch, reactive } from 'vue'
+import useUserStore from '@/store/user';
+
+const userStore = useUserStore()
 
 interface RoomUsers {
   list: string[]
@@ -27,7 +30,8 @@ const emits = defineEmits(['getTalkMessages'])
 const roomUserList = reactive<RoomUserData>({ list: [] })
 
 const setCurrentChater = (curChater: string) => {
-  emits('getTalkMessages', curChater)
+  userStore.updateCurChater(curChater)
+  emits('getTalkMessages')
 }
 
 watch(
