@@ -37,7 +37,7 @@ const setCurrentChater = (curChater: string) => {
 watch(
   () => props.roomUsers.list,
   (cur) => {
-    console.log(cur)
+    // console.log(cur)
     const result = props.allUsers.filter((item) => cur.includes(item.username))
     roomUserList.list = result
   }

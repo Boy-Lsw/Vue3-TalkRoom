@@ -2,7 +2,7 @@
 import { reactive, watch, ref } from 'vue'
 import useUserStore from '@/store/user'
 import httpHost from '@/interwork/axios'
-import { formatTime } from '@/utils'
+import { formatTime, toBottom } from '@/utils'
 import { socket } from '@/interwork/socket'
 
 const userStore = useUserStore()
@@ -17,25 +17,30 @@ interface Message {
 interface CurMessage {
   list: Message[]
 }
+interface RoomMessage {
+  sender: string
+  content: string
+  sendTime: string
+}
+interface RoomMessageList {
+  list: RoomMessage[]
+}
 interface Props {
   isEnterRoom: boolean
   roomId: string
   messageList: Message[]
   curChater: string
+  roomMessage: RoomMessage[]
 }
 
 const props = defineProps<Props>()
 
-// interface RoomMessage {
-//   sender: string,
-//   sendTime: string,
-//   content: string
-// }
-// const roomMessages = reactive<RoomMessage[]>([])
-
 const isTalking = ref(false)
 
 const messages = reactive<CurMessage>({ list: [] })
+const roomMessages = reactive<RoomMessageList>({
+  list: []
+})
 
 const iptMessage = ref('')
 const sendMessage = async () => {
@@ -64,8 +69,25 @@ const sendMessage = async () => {
   iptMessage.value = ''
 }
 
-// const iptRoomMessage = ref('')
-const sendRoomMessage = () => {}
+const iptRoomMessage = ref('')
+const sendRoomMessage = () => {
+  const msg = {
+    content: iptRoomMessage.value.trim(),
+    sendTime: formatTime(new Date()),
+    sender: userStore.username
+  }
+  // roomMessages.list.push(msg)
+  socket.emit('sendRoomMessage', msg)
+  iptRoomMessage.value = ''
+}
+
+const getRoomMessage = (msg: RoomMessage) => {
+  // socket.off('getRoomMessage')
+  toBottom(getDom())
+  roomMessages.list.push(msg)
+  console.log(msg)
+}
+socket.on('getRoomMessage', getRoomMessage)
 
 const getDom = () => {
   const contentBox = document.querySelector('.content-box .content .messages')
@@ -79,8 +101,18 @@ defineExpose({ getDom, talkingFlag })
 watch(
   () => props.messageList,
   (cur) => {
+    // console.log(cur, old)
     isTalking.value = true
     messages.list = cur
+  }
+)
+watch(
+  () => props.roomMessage,
+  async (cur) => {
+    roomMessages.list = cur
+  },
+  {
+    deep: true
   }
 )
 </script>
@@ -95,7 +127,7 @@ watch(
           v-for="item in messageList"
           :key="item.id"
           :class="`information-box ${
-            item.sender == userStore.username ? 'toOther' : 'toMe'
+            item.sender == userStore.username ? 'toOther' : ''
           }`"
         >
           <span class="name">{{ item.sender }}</span>
@@ -115,35 +147,30 @@ watch(
   <div class="content-box" v-else>
     <div class="content">
       <span class="title">房间号:{{ props.roomId }}</span>
+
       <div class="messages">
-        <div class="tips">tipsTest</div>
-        <div class="information-box toMe">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information">
-            nihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihao</span
-          >
-        </div>
-        <div class="information-box toMe">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information">nihaonihonihao</span>
-        </div>
-        <div class="information-box toOther">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information"> nihaonihaoni </span>
-        </div>
-        <div class="information-box toOther">
-          <span class="name">liao</span>
-          <span class="time">10:24:35</span>
-          <span class="information">
-            nihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihaonihao
-          </span>
-        </div>
+        <template v-for="item in roomMessages.list" :key="item.sendTime">
+          <template v-if="item.sender == 'sys'">
+            <div class="tips">
+              {{ item.content }}
+            </div>
+          </template>
+          <template v-else>
+            <div
+              :class="`information-box 
+            ${item.sender == userStore.username ? 'toOther' : ''}
+            `"
+            >
+              <span class="name">{{ item.sender }}</span>
+              <span class="time">{{ item.sendTime }}</span>
+              <span class="information">{{ item.content }}</span>
+            </div>
+          </template>
+        </template>
       </div>
+
       <div class="sender">
-        <el-input placeholder="说点什么..."></el-input>
+        <el-input placeholder="说点什么..." v-model="iptRoomMessage"></el-input>
         <el-button type="primary" size="large" @click="sendRoomMessage"
           >发送</el-button
         >
@@ -185,10 +212,11 @@ watch(
       width: 100%;
       overflow-y: auto;
       overflow-x: hidden;
-      // .tips{
-      //   text-align: center;
-      //   color: #707070;
-      // }
+      .tips {
+        text-align: center;
+        color: #707070;
+        font-size: 16px;
+      }
       .information-box {
         display: flex;
         flex-direction: column;
@@ -245,10 +273,10 @@ watch(
 }
 </style>
 
-<style>
+<!-- <style>
 .tips {
   text-align: center;
   color: #707070;
   font-size: 16px;
 }
-</style>
+</style> -->

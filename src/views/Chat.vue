@@ -30,13 +30,22 @@ interface Message {
 interface CurMessage {
   list: Message[]
 }
+interface RoomMessage {
+  sender: string
+  content: string
+  sendTime: string
+}
+interface RoomMessageList {
+  list: RoomMessage[]
+}
 interface RoomUsers {
   list: string[]
 }
 
-let messages = reactive<CurMessage>({
+const messages = reactive<CurMessage>({
   list: []
 })
+const roomMessages = reactive<RoomMessageList>({ list: [] })
 
 const chatContentRef = ref()
 const formRef = ref<FormInstance>()
@@ -107,6 +116,7 @@ const enterRoom = () => {
 const leaveRoom = () => {
   socket.emit('leave')
   socket.off('sys')
+  roomMessages.list = []
   isEnterRoom.value = false
   chatContentRef.value.talkingFlag()
 }
@@ -118,18 +128,24 @@ const submitForm = (formEl: FormInstance | undefined) => {
       showJoinRoom.value = false
       socket.emit('joinRoom', {
         roomId: joinRoomData.number,
-        user: localStorage.getItem('username')
+        user: userStore.username
       })
       socket.on('sys', async (info) => {
         roomUsers.list = [...info.users]
         // console.log(info)
+
         const time = formatTime(new Date())
-        const tip = document.createElement('div')
-        tip.setAttribute('class', 'tips')
-        tip.innerHTML = `${info.msg} (${time})`
-        await nextTick()
-        const contentDom = chatContentRef.value.getDom()
-        contentDom.appendChild(tip)
+        // const tip = document.createElement('div')
+        // tip.setAttribute('class', 'tips')
+        // tip.innerHTML = `${info.msg} (${time})`
+        // await nextTick()
+        // const contentDom = chatContentRef.value.getDom()
+        // contentDom.appendChild(tip)
+        roomMessages.list.push({
+          sender: 'sys',
+          content: `${info.msg} (${time})`,
+          sendTime: time
+        })
       })
     } else {
       console.log('error submit!')
@@ -183,6 +199,12 @@ onMounted(async () => {
     allUsers.push(user)
   })
 })
+
+window.addEventListener('beforeunload', () => {
+  if (isEnterRoom.value) {
+    socket.emit('leave')
+  }
+})
 </script>
 
 <template>
@@ -199,6 +221,7 @@ onMounted(async () => {
         :isEnterRoom="isEnterRoom"
         :roomId="joinRoomData.number"
         :messageList="messages.list"
+        :roomMessage="roomMessages.list"
         :curChater="curChater"
         ref="chatContentRef"
       ></ChatContent>
